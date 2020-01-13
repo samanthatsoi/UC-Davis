@@ -1,0 +1,240 @@
+---
+title: "STA141AHW1"
+author: "Sam Tsoi"
+date: 'Due: 10/17/2017'
+output: html_document
+---
+```{r, echo=FALSE}
+hwdata1 <- readRDS("~/Desktop/college_scorecard_2013.rds")
+
+```
+### 1. 
+1. How many observations are recorded in the dataset? How many colleges are recorded?
+```{r,echo=FALSE}
+dim(hwdata1)
+nrow(hwdata1)
+sum(hwdata1$main)
+```
+There are  `r nrow(hwdata1)` observations recorded in the dataset. There are `r sum(hwdata1$main)` college campuses in the data.
+
+
+### 2. 
+How many features are there? How many of these are categorical? How many are discrete? Are there any other kinds of features in this dataset?
+```{r, echo=FALSE}
+ncol(hwdata1)
+var_class<-sapply(hwdata1, class)
+
+table(var_class)
+```
+```{r,include=FALSE}
+sum(var_class=="factor")
+sum(var_class=="factor")
+sum(var_class=="numeric")
+sum(var_class=="integer")
+names(var_class[var_class=="character"])
+```
+There are `r ncol(hwdata1)` features in this data. There are `r sum(var_class=="factor")+ sum(var_class=="character")` features that are categorical (since `r sum(var_class=="factor")` features are 'factors' and `r sum(var_class=="character")` features are are 'characters'),  `r sum(var_class=="numeric") + sum(var_class=="integer")` that are discrete (since `r sum(var_class=="numeric")` are 'numeric' and `r sum(var_class=="integer")` are 'integers'), and `r sum(var_class=="logical")` features that are 'logical' (TRUE or FALSE). Some examples of the features in the character class are `r names(var_class[var_class=="character"])`.  
+
+
+### 3. 
+How many missing values are in the dataset? Which feature has the most missing values? Are there any
+patterns?
+```{r, echo=FALSE}
+sum(is.na(hwdata1))
+
+
+which.max(colSums(is.na(hwdata1)))
+which.min(colSums(is.na(hwdata1)))
+
+sum(is.na(hwdata1$avg_sat))
+
+#length(colSums(is.na(hwdata)))
+
+#length(sapply(as.data.frame(is.na(hwdata)), sum))
+
+which.max(sapply(as.data.frame(is.na(hwdata1)), sum))
+
+which.max(apply(as.matrix(is.na(hwdata1)),1, sum))
+```
+This is a summary table of how many missing values are in each feature: `r colSums(is.na(hwdata1))`. There's a total of `r sum(is.na(hwdata1))` missing values in the dataset. The feature that had the most missing values is at index `r which.max(colSums(is.na(hwdata1)))`, which is the average SAT score of the college. The feature that had the least missing value is at index `r which.min(colSums(is.na(hwdata1)))`, which is the unit ID of the college. But, we found that when we list the missing values of each feature, there are 11 others (12 total) features that also had no missing values. Some patterns I observe are that IDs, names, zip code, etc. (probably features that are mandated by law) have less missing values. These data probably does not require one to obtain data, as these features are just identifications of a campus. On the other hand, things that change every year and features that are discrete have more missing values, such as average SAT, graduation population, veteran, etc.   
+
+
+### 4. 
+Are there more public colleges or private colleges recorded? For each of these, what are the proportions
+of highest degree awarded? Display this information in one graph and comment on what you see.
+```{r, echo=FALSE}
+table(hwdata1$ownership)
+```
+```{r, include=FALSE}
+degree_dat<-hwdata1[c("primary_degree","highest_degree","ownership")]
+
+degree_dat_tab<-table(degree_dat)
+dimnames(degree_dat_tab)
+
+prop.table(degree_dat_tab,margin=1)
+prop.table(degree_dat_tab,margin=2)
+```
+There are more private colleges recorded, as in the data, there are 716 public colleges, 1710 nonprofit colleges, and 886 for profit colleges.
+The proportion of the highest degrees are as follows, separated for public, nonprofit, and for profit schools:
+
+
+```{r, echo=FALSE}
+highAndOwn <-hwdata1[c("highest_degree","ownership")]
+highestDeg <-prop.table(table(highAndOwn))
+highestDeg
+#mosaicplot(prop.table(degree_dat_tab,margin=1),color=TRUE, shade=TRUE)
+
+barplot(highestDeg, legend=T, main = "Proportion of highest degree rewarded for each type of college")
+```
+  
+  As shown, the most highest degree awarded for public and nonprofit schools are graduate degrees, whereas for for-profit schools is bachelor degree. Interestingly, public schools do not award certificates and only private schools do. For-profit schools award associate degrees the most out of the 3 school, and public schools seem to only award bachelor, graduate, and associate degrees the most. The greatest proportion of degrees awarded are nonprofit private schools, then for profit private schools, then public schools. This might suggest how majority of the education system is still owned by business owners, and aren't necessarily for the "good of the people" (as suggested by the large proportion of degree awarded by for profit schools), but is still for making money. I presume that the larger amount of certificate, associate, and other degree awarded by for-profit schools are to propel individuals to the working force of the economy. This includes technicians and other jobs that require licensing and other technical skills.  
+  
+
+### 5. 
+What is the average undergraduate population? What is the median? What are the deciles? Display
+these statistics and the distribution graphically. Do you notice anything unusual?  
+
+```{r,echo=FALSE}
+mean(hwdata1$undergrad_pop, na.rm=TRUE)
+median(hwdata1$undergrad_pop, na.rm=TRUE)
+boxplot(hwdata1$undergrad_pop, na.rm=TRUE, main="Undergraduate population of colleges nationally with outliers")
+```
+```{r, include=FALSE}
+quantile(hwdata1$undergrad_pop, na.rm=TRUE)
+hwdata1$name[hwdata1$undergrad_pop == 166816]
+```
+Zooming into the quartiles of the graph, I will remove outliers:  
+
+```{r,echo=FALSE}
+boxplot(hwdata1$undergrad_pop, na.rm=TRUE,outline=FALSE, main="Undergraduate population of colleges nationally without outliers")
+```
+   
+   The mean (average) undergraduate population is `r mean(hwdata1$undergrad_pop, na.rm=TRUE)`, and the median is `r median(hwdata1$undergrad_pop, na.rm=TRUE)`. The quantiles and deciles are as follows `r quantile(hwdata1$undergrad_pop, na.rm=TRUE)`. This demonstrates that the data is skewed right, so median is lower than the mean. This might mean that there are outliers that have a really large population of undergraduate students that would shift the mean to larger than the median. With both the boxplots with and without the outliers, it seems like there are a few schools that have really really large populations of undergraduate students, compared to those of colleges nationally. Additionally, there is one school that has an undergraduate population of 166816, which I found is the University of Pheonix-Online Campus. Online campuses data might differ from the traditional in-class college data.  
+
+
+### 6. 
+Compare tuition graphically in the 5 most populous states. Discuss conclusions you can draw from your
+results.  
+
+```{r, echo=FALSE}
+meantut <- mean(hwdata1$tuition, na.rm = TRUE)
+tuitionCA <- hwdata1$tuition[hwdata1$state %in% "CA"]
+tuitionNY <- hwdata1$tuition[hwdata1$state %in% "NY"]
+tuitionFL <- hwdata1$tuition[hwdata1$state %in% "FL"]
+tuitionPA <- hwdata1$tuition[hwdata1$state %in% "PA"]
+tuitionTX <- hwdata1$tuition[hwdata1$state %in% "TX"]
+medTX <- median(tuitionTX, na.rm=TRUE)
+medPA <- median(tuitionPA, na.rm=TRUE)
+boxplot(tuitionCA,tuitionNY,tuitionFL,tuitionPA,tuitionTX, names = c("CA","NY","FL","PA","TX"), xlab= "State",ylab="Tuition", main="Tuition in 5 most populous states")
+
+```
+  
+  Theres a wider range of the 1st quantile and 3rd quantile in New York than that of any of the other 4 states. There are outliers in colleges in Florida and Texas, while there are no outliers in California, New York, and Pennsylvania. Colleges in Pennsylvania has the highest median tuition compared to that of the other 4 states, and New York has colleges the highest tuition overall compared to that of other 4 states. It is interesting that these two states are both in the Northeast, while Florida and Texas are more so in the south of the US, and has lower median tuitions in college. At the same time, though, New York also has the lowest tuition overall compared to that of other 4 states. Tuition median range between $`r median(tuitionTX, na.rm=TRUE)` (Texas) and $`r median(tuitionPA, na.rm=TRUE)` (Pennsylvania) yearly in the 5 most populous states, and the mean tuition of all colleges is `r mean(hwdata1$tuition, na.rm = TRUE)`.  
+
+### 7.
+Display and comment on how spending per student (by the college) and students’ 10-year earnings are
+related. Is this relationship affected by whether a college is public, nonprofit, or for profit?  
+
+```{r, echo=FALSE}
+spendingPub <- hwdata1$spend_per_student[hwdata1$ownership %in% "Public"]
+spendingPub2 <- spendingPub[!is.na(spendingPub)]
+spendingNon <- hwdata1$spend_per_student[hwdata1$ownership %in% "Nonprofit"]
+spendingNon2 <- spendingNon[!is.na(spendingNon)]
+spendingFor <- hwdata1$spend_per_student[hwdata1$ownership %in% "For Profit"]
+spendingFor2 <- spendingFor[!is.na(spendingFor)]
+earningPub <- hwdata1$avg_10yr_salary[hwdata1$ownership %in% "Public"]
+earningPub2 <- earningPub[!is.na(earningPub)]
+earningNon <- hwdata1$avg_10yr_salary[hwdata1$ownership %in% "Nonprofit"]
+earningNon2 <- earningNon[!is.na(earningNon)]
+earningFor <- hwdata1$avg_10yr_salary[hwdata1$ownership %in% "For Profit"]
+earningFor2 <- earningPub[!is.na(earningFor)]
+plot(spendingPub,earningPub, main = "spending vs. earning for students who attended public colleges", xlab = "spending per student in USD", ylab ="10 year earning for students in USD")
+plot(spendingNon,earningNon, main = "spending vs. earning for students who attended nonprofit colleges", xlab = "spending per student in USD", ylab ="10 year earning for students in USD")
+plot(spendingFor,earningFor, main = "spending vs. earning for students who attended for-profit colleges", xlab = "spending per student in USD", ylab ="10 year earning for students in USD")
+```
+  
+  There doesn't seem to be strong correlation in any of the different types of colleges (public, nonprofit, for profit). There is a slight positive correlation of spending per student to 10-year earning for public and nonprofit colleges, but there is no correlation for spending per student to 1-year earning for for-profit colleges. Spending seems to differ no matter how much people earned over the course of 1-0 years for for-profit colleges. However, in non-profit colleges, there seems to be greater spending vs. 10-year earning, but this relationship isn't very strong.  
+
+### 8. 
+Which colleges give the best earnings for the cost? Explain how you determined this. Discuss limitations
+of your result and features2 you did not examine that could confound your result.
+```{r, include=FALSE}
+hwdata1$best <- hwdata1$avg_10yr_salary/hwdata1$cost
+hwdata1$name[hwdata1$avg_10yr_salary]
+hwdata1$best
+best <- sort(hwdata1$best,decreasing=T)[1:10]
+
+hwdata1$best[hwdata1$name == "Auburn University at Montgomery"]
+hwdata1$name[best]
+```
+I determined the best earning for the cost by dividing the average 10-year salary of each college by the cost of the college. Then, I sorted the earnings for the cost from largest to smallest to see that the top ten best earning for the cost are `r best`. This means that for each dollar spent on the cost of college, you earn $`r best` back over the course of 10 years. The colleges that correspond with the best earning for the cost are United States Merchant Marine Academy, Augusta University, South Texas College, University of Connecticut-Avery Point, University of Connecticut-Stamford, University of Connecticut-Tri-Campus, Indian River State College, Palm Beach State College. What I find interesting is that 
+```{r, echo=FALSE}
+hwdata1$ownership[hwdata1$name %in% c("United States Merchant Marine Academy", "Augusta University", "South Texas College", "University of Connecticut-Avery Point", "University of Connecticut-Stamford", "University of Connecticut-Tri-Campus", "Indian River State College", "Palm Beach State College")]
+```
+all of these schools are public schools.  
+
+Some limitations... We are not taking into account of student debt. For those students who had to take out a loan, an interest is not included into this calculation. So, for some students, they may have used some of their earnings throughout the 10-year period to pay back all the college tuition + interest. Other factors, such as majors, can impact which college has greater earnings. For example, there may be schools that have greater number of STEM students, such as technical schools, and these students may have greater earnings than those who are not STEM. While this may not be true, this is an example of how different colleges may produce different earnings and disregards the "prestige" of certain colleges.    
+
+
+### 9. Which colleges are the most racially diverse? Explain the strategy you used to determine this.  
+```{r, echo=FALSE}
+idealDiv <- 1/7
+
+hwdata1$diversity <- abs((hwdata1$race_white - idealDiv)/idealDiv) + abs((hwdata1$race_black - idealDiv)/idealDiv) + abs((hwdata1$race_hispanic - idealDiv)/idealDiv) + abs((hwdata1$race_asian - idealDiv)/idealDiv) + abs((hwdata1$race_native - idealDiv)/idealDiv) + abs((hwdata1$race_pacific - idealDiv)/idealDiv) + abs((hwdata1$race_other - idealDiv)/idealDiv)
+top10scores <- sort(hwdata1$diversity,decreasing=F)[1:10]
+mostDivColleges <- hwdata1$name[hwdata1$diversity %in% top10scores]
+bot10scores <- sort(hwdata1$diversity,decreasing=T)[1]
+botDivColleges <- hwdata1$name[hwdata1$diversity %in% bot10scores]
+mostDivColleges
+top10scores
+```
+I found that To see which colleges are the most racially diverse, I created a diversity "score" in which the closest the score is to 0, the greater the racial diversity. I found that the "ideal diversity" of each race should be around `r idealDiv`, as there are 7 categories of race, which I divided equally for each race. Then, for each race, I subtracted the proportion to the ideal diversity and then divided the ideal diversity, so we can see how much each race differed from the "ideal diversity". I then added each of these numbers for each race together for the college to compute the "diversity score". Thus, the closer each diversity is to `r idealDiv`, the closer the diversity score would be to 0. The larger the diversity score is, the less racially diverse the college would be.  
+I found that `r mostDivColleges` are the top 10 most diverse, according to my "diversity score", with Holy Names University being the most diverse with a score of 3.8650, and LIU Brooklyn being second with a score of 3.9251. The diversity scores are as follows: `r top10scores`.  The least diverse colleges have a diversity score of 12.  
+
+
+### 10. 
+How does UC Davis compare to other colleges in the nation? Use statistical summaries and graphics
+to examine at least 3 characteristics that students might be interested in.  
+
+```{r,echo=FALSE}
+hwdata1$tuition[hwdata1$name %in% "University of California-Davis"]
+boxplot(hwdata1$tuition,outline=FALSE, main = "Tuitions in colleges nationally and that of UC Davis", ylab = "Tuition in USD")
+points(hwdata1$tuition[hwdata1$name %in% "University of California-Davis"])
+```
+  
+  
+The tuition recorded at UC Davis is $`r hwdata1$tuition[hwdata1$name %in% "University of California-Davis"]`, which seems to be lower than the median of tuition in colleges nationally. This might have to do with the fact that UC Davis is a public school, and the data includes both public and private schools. So, I looked at how tuition of UC Davis compares to those of other public colleges:  
+
+```{r,echo=FALSE}
+boxplot(hwdata1$tuition[hwdata1$ownership %in% "Public"],outline=FALSE, main = "Tuitions in public colleges nationally and that of UC Davis", ylab = "Tuition in USD")
+points(hwdata1$tuition[hwdata1$name %in% "University of California-Davis"])
+```
+  
+  This box plot demonstrates that the tuition of UC Davis is at the latter end of the spectrum, and is much higher than the median tuition of public colleges nationally.  
+
+Looking at more the diversity of UC Davis and that of other colleges,
+```{r, echo=FALSE}
+
+boxplot(hwdata1$first_gen,outline=FALSE, main="Proportion of first generations in colleges nationally and that of UC Davis",ylab="Proportion of first gen")
+points(hwdata1$first_gen[hwdata1$name %in% "University of California-Davis"])
+
+boxplot(hwdata1$race_black,outline=FALSE, main="Proportion of blacks in colleges nationally and that of UC Davis", ylab = "Proportion of blacks")
+points(hwdata1$race_black[hwdata1$name %in% "University of California-Davis"])
+```
+  
+  UC Davis has a lower proportion of first generations compared to that of colleges nationally, as the proportion is lower than the median proportion of all colleges. Similarly, UC Davis has a lower proportion of blacks compared to that of colleges nationally, as the proportion is lower than the 1st quartile proportion of all colleges.  
+  
+
+### Citations:
+Colloborated with Brody Lowry  
+
+Looked on Piazza for tips on how to do diversity score and using %in% instead of ==  
+
+Consulted lecture notes for #1 to #4.   
+
+
+<P style="page-break-before: always">
+
+### Code Appendix 
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+```

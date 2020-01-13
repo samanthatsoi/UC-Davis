@@ -1,0 +1,133 @@
+---
+title: "ECS 132 - Homework 4"
+author: "Sam Tsoi, sgtsoi@ucdavis.edu, 913032178"
+date: "10/29/2018"
+output: html_document
+---
+
+# Problem 1 / Normally-Distributed Flight Departures
+_The  number  of  flights  departing  from  JFK  (per  hour)  is  normally  distributed  with μ=  40  andσ= 6.  What is the probability that more than 50 flights depart per hour?  Additionally, what isthe probability that,  in a 10 hour period,  there exists at least 1 hour with more than 50 flightsdeparting?_
+Let X~N(μ,σ^2), X~N(40, 6^2)  
+
+$P(X>50) = 1 - P(X<=50) = 1- \displaystyle\int_{0}^{50} \frac{1}{\sqrt{2\pi\sigma}} e ^{\frac{-(x-\mu)^2}{2\sigma^2}}$  
+
+$= 1- \displaystyle\int_{0}^{50} \frac{1}{\sqrt{2*\pi*6}} e ^{\frac{-(x-40)^2}{2*36}}$  
+
+$= 1- \displaystyle\int_{0}^{50} \frac{1}{\sqrt{12\pi}} e ^{\frac{-(x-40)^2}{72}}$  
+
+Using R,  
+
+```{r}
+pnorm(50, mean = 40, sd = 6, lower.tail = FALSE) #1-pnorm(50, mean = 40, sd = 6)
+```
+
+P(At least 1 in a 10 hour period)  = 1 - P(none has more than 50 flights departing in a 10 hour period)    
+
+= 1 - (probability of not having more 50 in one hour)^10 =
+```{r}
+1-(pnorm(50, mean = 40, sd = 6))^10
+```
+
+# Problem 2 / Data Center Economics
+_You decide to operate your own cloud data center.  Your cost of processing capacity is 10 centsper CPU (per minute) and you sell it at 15 cents per CPU (per minute).  Any CPU capacity thatis not used is lost.  Suppose you have 9 clients and for any given minute they independently andrandomly request CPU with probabilityp= 1/3.  What is the approximate number of CPUs youshould purchase to maximize the expected profit?_
+If client request for CPU, you will earn 15 cents - 10 cents = 5 cents. If the client does not request for CPU, then you will lose 10 cents. The probability that client request for CPU is 1/3. 1-p = 2/3
+Given 9 clients, if p=1/3, then number of CPU request will be approximately 3. 3 clients * 5 cents profit = 15 cents profit total.
+Therefore, you should purchase 3 CPUS to maximize the expected profit, which is 15 cents, at 5 cents profit per CPU.  
+
+
+# Problem 3
+_Jobs  arriving  to  a  computer  have  been  found  to  require  CPU  time  that  can  be  modeled  by  anexponential distribution with parameter 1/140 per millisecond.  The CPU scheduling discipline isquantum-oriented so that jobs not completing within a quantum of 100 milliseconds will be routedback to the tail of the queue of waiting jobs.  Find the probability that an arriving job will be forcedto wait for a second quantum.  Of the 800 jobs coming in during a day, how many are expected tofinish within the first quantum?_
+X~Exponential(1/140)  
+
+Find P(X < 100)
+$\lambda = \frac{1}{140}$
+```{r}
+pexp(100,rate = 1/140)
+```
+  
+  
+For 800 jobs that come in a day, I expect 800*P(X<100)
+```{r}
+800*pexp(100,rate = 1/140)
+```
+Therefore, I expect around `r trunc(800*pexp(100,rate = 1/140))` jobs to finish within the first quantum.  
+
+  
+  
+# Problem 4
+_Suppose network flow sizes are modeled by normal random variables with parameterμ= 58 GBytesandσ= 2.5 GBytes.  What percentage of the flows are greater than 58 GBytes?  Suppose flowsthat are greater than 58 GBytes are classified aslarge  flows.  What percentage of thelarge  flowsare greater than 62 GBytes?_
+
+X~(58, 2.5^2)
+P(X > 58) = 
+```{r}
+pnorm(58, mean = 58, sd = 2.5, lower.tail = FALSE)
+```
+Percentage of 62 GBytes given percentage of large flows:
+P(X>62|X>58) =
+```{r}
+pnorm(62, mean = 58, sd = 2.5, lower.tail = FALSE) / pnorm(58, mean = 58, sd = 2.5, lower.tail = FALSE)
+```
+
+# Problem 5 / From Uniform to Normal with the Box-Muller Transform in R
+## 5.1  
+_Type help(log) in yourRconsole.  This will help you rapidly bring up documentation on theR language when you need to check the expected behavior of functions._  
+```{r}
+help(log)
+```
+
+## 5.2  
+_Generate two Uniformly-distributed random vectors,u1andu2of length 50,000.  Plot one ofthem and describe what you see._
+```{r}
+u1 <- runif(50000)
+u2 <- runif(50000)
+
+hist(u1)
+```
+In this distribution, the points are uniformly distributed. At each point, there are around 2500 points that are within a range of 0.05. Theoretically, a uniformly-distributed vector of 50,000 should have the same frequency for each number throughout. However, realistically, not all numbers will have the same frequencies.  
+
+## 5.3
+_Createz1andz2using the above formulas._
+```{r}
+z1 <- sqrt(-2*log(u1))*cos(2*pi*u2)
+z2 <- sqrt(-2*log(u1))*sin(2*pi*u2)
+```
+## 5.4  
+_Create a new vectorzwhose elements are the interleaved elements ofz1andz2._   
+```{r}
+z <- c(z1,z2)
+```
+## 5.5  
+_Plotz. Describe what you see.  Does this look like a normal distribution?_
+```{r}
+hist(z)
+```
+I see a normal distribution centered around 0 with variance of around 1. i.e. X~N(0,1)   
+
+## 5.6  
+_Let’s compare.  Define a vectorzzto simply be the sequence of numbers in the domain of z,incremented by 0.01.  (Think of this as what was the X axis in the above plots)._
+```{r}
+zz <- c(min(z):max(z), inc=0.01)
+zz
+```
+## 5.7
+_Plot the histogram of Z as a probability density function (pdf).  (Hint:  use the prob=T flag)._  
+```{r}
+hist(z,prob = T)
+```
+
+## 5.8
+_Using thelines()function, overlay the line of the pdf of the normal distribution runningoverzzonto your histogram.  Does the simulation appear to agree with the line?_   
+```{r}
+hist(z,prob = T)
+x<-seq(-100,100,0.01)
+lines(dnorm(x, mean=mean(z), sd=sd(z))) #, add=TRUE)
+curve(dnorm(x, mean(z), sd=sd(z)), add=TRUE)
+```
+
+The simulation does not seem to appear with the line, but it seems to do better with the curve. Since it is a normal distribution, it will do better using the curve() function.  
+
+
+
+
+
+

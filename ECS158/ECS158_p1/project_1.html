@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Joël Porquet" />
+  <title>ECS 158: Project #1 - Matrix multiplication and POSIX threads</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <style type="text/css">
+html {
+font-size: 100%;
+overflow-y: scroll;
+-webkit-text-size-adjust: 100%;
+-ms-text-size-adjust: 100%;
+}
+body {
+color: #444;
+font-family: 'Noto Serif', serif;
+font-size: 10px;
+line-height: 1.5em;
+padding: 1em;
+width: 960px;
+margin: auto;
+background: #fefefe;
+position: relative;
+}
+
+.keyword{
+position: absolute;
+right: -15em;
+width: 10em;
+}
+
+a {
+color: #0645ad;
+text-decoration: none;
+}
+a:visited {
+color: #0b0080;
+}
+a:hover {
+color: #06e;
+}
+a:active {
+color: #faa700;
+}
+a:focus {
+outline: thin dotted;
+}
+
+*::-moz-selection {
+background: rgba(255, 255, 0, 0.3);
+color: #000;
+}
+*::selection {
+background: rgba(255, 255, 0, 0.3);
+color: #000;
+}
+a::-moz-selection {
+background: rgba(255, 255, 0, 0.3);
+color: #0645ad;
+}
+a::selection {
+background: rgba(255, 255, 0, 0.3);
+color: #0645ad;
+}
+
+p {
+margin: 1em 0;
+}
+img {
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+color: #111;
+line-height: 125%;
+margin-top: 1em;
+font-weight: normal;
+}
+h4, h5, h6 {
+font-weight: bold;
+}
+h1 {
+font-size: 2.5em;
+}
+h2 {
+font-size: 2em;
+}
+h3 {
+font-size: 1.5em;
+}
+h4 {
+font-size: 1.2em;
+}
+h5 {
+font-size: 1em;
+}
+h6 {
+font-size: 0.9em;
+}
+blockquote {
+color: #666666;
+margin: 0;
+padding-left: 3em;
+border-left: 0.5em #EEE solid;
+}
+hr {
+display: block;
+height: 2px;
+border: 0;
+border-top: 1px solid #aaa;
+border-bottom: 1px solid #eee;
+margin: 1em 0;
+padding: 0;
+}
+pre, code, kbd, samp {
+color: #000;
+background: #f0f0f0;
+font-family: 'Noto Sans Mono', monospace;
+font-size: 95%;
+}
+pre {
+white-space: pre;
+white-space: pre-wrap;
+word-wrap: break-word;
+}
+b, strong {
+font-weight: bold;
+}
+dfn {
+font-style: italic;
+}
+ins {
+background: #ff9;
+color: #000;
+text-decoration: none;
+}
+mark {
+background: #ff0;
+color: #000;
+font-style: italic;
+font-weight: bold;
+}
+sub, sup {
+font-size: 75%;
+line-height: 0;
+position: relative;
+vertical-align: baseline;
+}
+sup {
+top: -0.5em;
+}
+sub {
+bottom: -0.25em;
+}
+ul, ol {
+margin: 1em 0;
+padding: 0 0 0 2em;
+}
+li p:last-child {
+margin-bottom: 0;
+}
+ul ul, ol ol {
+margin: .3em 0;
+}
+dl {
+margin-bottom: 1em;
+}
+dt {
+font-weight: bold;
+margin-bottom: .8em;
+}
+dd {
+margin: 0 0 .8em 2em;
+}
+dd:last-child {
+margin-bottom: 0;
+}
+img {
+border: 0;
+-ms-interpolation-mode: bicubic;
+vertical-align: middle;
+}
+figure {
+display: block;
+text-align: center;
+margin: 1em 0;
+}
+figure img {
+border: none;
+margin: 0 auto;
+}
+figcaption {
+font-size: 0.8em;
+font-style: italic;
+margin: 0 0 .8em;
+}
+
+table {
+margin-bottom: 2em;
+border-bottom: 1px solid #ddd;
+border-right: 1px solid #ddd;
+border-spacing: 0;
+border-collapse: collapse;
+}
+table th {
+padding: .2em 1em;
+background-color: #eee;
+border-top: 1px solid #ddd;
+border-left: 1px solid #ddd;
+}
+table td {
+padding: .2em 1em;
+border-top: 1px solid #ddd;
+border-left: 1px solid #ddd;
+vertical-align: top;
+}
+.author {
+font-size: 1.2em;
+
+}
+
+@media only screen and (min-width: 480px) {
+body {
+font-size: 14px;
+}
+}
+@media only screen and (min-width: 768px) {
+body {
+font-size: 16px;
+}
+}
+@media print {
+* {
+background: transparent !important;
+color: black !important;
+filter: none !important;
+-ms-filter: none !important;
+}
+body {
+font-size: 12pt;
+max-width: 100%;
+}
+a, a:visited {
+text-decoration: underline;
+}
+hr {
+height: 1px;
+border: 0;
+border-bottom: 1px solid black;
+}
+a[href]:after {
+content: " (" attr(href) ")";
+}
+abbr[title]:after {
+content: " (" attr(title) ")";
+}
+.ir a:after, a[href^="javascript:"]:after, a[href^="#"]:after {
+content: "";
+}
+pre, blockquote {
+border: 1px solid #999;
+padding-right: 1em;
+page-break-inside: avoid;
+}
+tr, img {
+page-break-inside: avoid;
+}
+img {
+max-width: 100% !important;
+}
+@page :left {
+margin: 15mm 20mm 15mm 10mm;
+}
+@page :right {
+margin: 15mm 10mm 15mm 20mm;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3 {
+page-break-after: avoid;
+}
+}
+</style>
+  <style type="text/css">.hll { background-color: #ffffcc }
+.c { color: #408080; font-style: italic } 
+.err { border: 1px solid #FF0000 } 
+.k { color: #008000; font-weight: bold } 
+.o { color: #666666 } 
+.ch { color: #408080; font-style: italic } 
+.cm { color: #408080; font-style: italic } 
+.cp { color: #BC7A00 } 
+.cpf { color: #408080; font-style: italic } 
+.c1 { color: #408080; font-style: italic } 
+.cs { color: #408080; font-style: italic } 
+.gd { color: #A00000 } 
+.ge { font-style: italic } 
+.gr { color: #FF0000 } 
+.gh { color: #000080; font-weight: bold } 
+.gi { color: #00A000 } 
+.go { color: #888888 } 
+.gp { color: #000080; font-weight: bold } 
+.gs { font-weight: bold } 
+.gu { color: #800080; font-weight: bold } 
+.gt { color: #0044DD } 
+.kc { color: #008000; font-weight: bold } 
+.kd { color: #008000; font-weight: bold } 
+.kn { color: #008000; font-weight: bold } 
+.kp { color: #008000 } 
+.kr { color: #008000; font-weight: bold } 
+.kt { color: #B00040 } 
+.m { color: #666666 } 
+.s { color: #BA2121 } 
+.na { color: #7D9029 } 
+.nb { color: #008000 } 
+.nc { color: #0000FF; font-weight: bold } 
+.no { color: #880000 } 
+.nd { color: #AA22FF } 
+.ni { color: #999999; font-weight: bold } 
+.ne { color: #D2413A; font-weight: bold } 
+.nf { color: #0000FF } 
+.nl { color: #A0A000 } 
+.nn { color: #0000FF; font-weight: bold } 
+.nt { color: #008000; font-weight: bold } 
+.nv { color: #19177C } 
+.ow { color: #AA22FF; font-weight: bold } 
+.w { color: #bbbbbb } 
+.mb { color: #666666 } 
+.mf { color: #666666 } 
+.mh { color: #666666 } 
+.mi { color: #666666 } 
+.mo { color: #666666 } 
+.sa { color: #BA2121 } 
+.sb { color: #BA2121 } 
+.sc { color: #BA2121 } 
+.dl { color: #BA2121 } 
+.sd { color: #BA2121; font-style: italic } 
+.s2 { color: #BA2121 } 
+.se { color: #BB6622; font-weight: bold } 
+.sh { color: #BA2121 } 
+.si { color: #BB6688; font-weight: bold } 
+.sx { color: #008000 } 
+.sr { color: #BB6688 } 
+.s1 { color: #BA2121 } 
+.ss { color: #19177C } 
+.bp { color: #008000 } 
+.fm { color: #0000FF } 
+.vc { color: #19177C } 
+.vg { color: #19177C } 
+.vi { color: #19177C } 
+.vm { color: #19177C } 
+.il { color: #666666 } 
+</style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">ECS 158: Project #1 - Matrix multiplication and POSIX threads</h1>
+<p class="author">Joël Porquet</p>
+<p class="date">UC Davis, Fall 2018</p>
+</header>
+<nav id="TOC">
+<ul>
+<li><a href="#changelog"><span class="toc-section-number">1</span> Changelog</a></li>
+<li><a href="#general-information"><span class="toc-section-number">2</span> General information</a></li>
+<li><a href="#objectives-of-the-project"><span class="toc-section-number">3</span> Objectives of the project</a></li>
+<li><a href="#program-description"><span class="toc-section-number">4</span> Program description</a></li>
+<li><a href="#suggested-work-phases"><span class="toc-section-number">5</span> Suggested work phases</a></li>
+<li><a href="#submission"><span class="toc-section-number">6</span> Submission</a></li>
+<li><a href="#academic-integrity"><span class="toc-section-number">7</span> Academic integrity</a></li>
+</ul>
+</nav>
+<h1 id="changelog"><span class="header-section-number">1</span> Changelog</h1>
+<p><em>Note that the specifications for this project are subject to change at anytime for additional clarification. Make sure to always refer to the <strong>latest</strong> version.</em></p>
+<ul>
+<li>v6: Rectify grade breakdown</li>
+<li>v5: More details compilation for Phase 4</li>
+<li>v5: Matrix order multiple of 8 for Phase 4</li>
+<li>v4: On errors, program should return 1</li>
+<li>v3: More information about compiler optimizations</li>
+<li>v2: Specify that error messages should be printed to <code>stderr</code></li>
+<li>v1: First publication</li>
+</ul>
+<h1 id="general-information"><span class="header-section-number">2</span> General information</h1>
+<ul>
+<li>Due before <strong>7:00 PM, Thursday, October 18th, 2018</strong>.</li>
+<li>You will be working with a partner for this project.</li>
+<li>The reference work environment is the CSIF.</li>
+</ul>
+<h1 id="objectives-of-the-project"><span class="header-section-number">3</span> Objectives of the project</h1>
+<p>The objectives of this programming project are:</p>
+<ul>
+<li>Getting familiar with the classic matrix multiplication problem, which is central to many applications (image processing, machine learning, etc.)</li>
+<li>Understanding the relationship between memory access patterns and performance.</li>
+<li>Identify a way to take advantage of task parallelism for this problem and implement it using POSIX threads.</li>
+<li>Investigate one other way to extract better performance.</li>
+</ul>
+<h1 id="program-description"><span class="header-section-number">4</span> Program description</h1>
+<h2 id="introduction"><span class="header-section-number">4.1</span> Introduction</h2>
+<p>Matrix multiplication is a basic tool of linear algebra and has numerous applications across many different fields: mathematics, statistics, physics, economics, and engineering. It is such a common problem that it has started being addressed directly by recent computing hardware (such as GPGPU).</p>
+<p>If <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAMBAMAAABLmSrqAAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAmURmdt0yIrtU74kQq83qP0zCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAATElEQVQIHWNgAAJGBSABBPoGENreAUwzswqA6XSOBjA9gTEARHMysCwA0YW7d3wA0RMYmL4DKU4GBrZvQFqZgYHnJwND7b8DDLpfDQCSGA2sLnIbZwAAAABJRU5ErkJggg==" alt="A" title="A" /> and <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAMBAMAAACgrpHpAAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAid2Zu1QyRBB2ze9mqyKFiH53AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAW0lEQVQIHWNgYBD6LGgSwMDAwGLAwPYdSPMDOR+BdH4DA+s3ID2LgSH6AJBeG3rEDkgxAMXmAin2DwwM/QcYGBgdgPQEBgYuAQYG+QdAdgEDz1eg8HpD4bsPGACNoBTCAMTy2QAAAABJRU5ErkJggg==" alt="B" title="B" /> are two square matrices of order <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAIBAMAAADdFhi7AAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAVHYQZqtEIs3du5mJ7zKFHavXAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAP0lEQVQIHWNgVDJxTWBgMKt3YGxgYEiQZGBawMDAsIeBVQFIXWPgL2BgYP/AIMnGwMDSwLCHiYGBx4HhjTIDAAXECXd0e4hoAAAAAElFTkSuQmCC" alt="n" title="n" />,</p>
+<p><br /><img style="vertical-align:middle" src="data:image/png;base64,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" alt="
+A =
+\begin{bmatrix}
+    a_{11} &amp; a_{12} &amp; a_{13} &amp; \dots  &amp; a_{1n} \\
+    a_{21} &amp; a_{22} &amp; a_{23} &amp; \dots  &amp; a_{2n} \\
+    \vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+    a_{n1} &amp; a_{n2} &amp; a_{n3} &amp; \dots  &amp; a_{nn}
+\end{bmatrix}
+,
+B =
+\begin{bmatrix}
+    b_{11} &amp; b_{12} &amp; b_{13} &amp; \dots  &amp; b_{1n} \\
+    b_{21} &amp; b_{22} &amp; b_{23} &amp; \dots  &amp; b_{2n} \\
+    \vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+    b_{n1} &amp; b_{n2} &amp; b_{n3} &amp; \dots  &amp; b_{nn}
+\end{bmatrix}
+" title="
+A =
+\begin{bmatrix}
+    a_{11} &amp; a_{12} &amp; a_{13} &amp; \dots  &amp; a_{1n} \\
+    a_{21} &amp; a_{22} &amp; a_{23} &amp; \dots  &amp; a_{2n} \\
+    \vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+    a_{n1} &amp; a_{n2} &amp; a_{n3} &amp; \dots  &amp; a_{nn}
+\end{bmatrix}
+,
+B =
+\begin{bmatrix}
+    b_{11} &amp; b_{12} &amp; b_{13} &amp; \dots  &amp; b_{1n} \\
+    b_{21} &amp; b_{22} &amp; b_{23} &amp; \dots  &amp; b_{2n} \\
+    \vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+    b_{n1} &amp; b_{n2} &amp; b_{n3} &amp; \dots  &amp; b_{nn}
+\end{bmatrix}
+" /><br /></p>
+<p>the matrix product <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAE8AAAAMBAMAAADR1v13AAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAEImrmXYi3TJEu+9UZs34ZVP9AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABCElEQVQYGV2Qv0rDUBTGfw2JphpNH6FUQeggpYKTg1icXLK4F1p3F0Ens+hqwcVFmqGjg6uDkBcQ+wYVn6CCf0HFc5L03uC3nO/78Z174AKVld3ogH9yBwY4pzurN5rWYpwTgwszHFsyggvZW0jAn1qcu0lkyTeEddirCUosztzS/LYh/gs8xlSlD6nBuTnXO4W8J4J7uXw7A+WZuocmLm89jLpyvTUjnQ1RO0sBnu77x5rCGE9KYSR+TkFJ/UZzKtG/UzaUH/yBRS1eKSgppfpuYlOKb+AmMrWMPR3IY5+m+AyOrh3BmYG5uZbd7DM0Vr5gkorx2vuxjJJ6vzUuP8YFWX9tdDbhD3pWNHD/msN8AAAAAElFTkSuQmCC" alt="C = A \cdot B" title="C = A \cdot B" /> is defined to be the <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAIBAMAAADdFhi7AAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAVHYQZqtEIs3du5mJ7zKFHavXAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAP0lEQVQIHWNgVDJxTWBgMKt3YGxgYEiQZGBawMDAsIeBVQFIXWPgL2BgYP/AIMnGwMDSwLCHiYGBx4HhjTIDAAXECXd0e4hoAAAAAElFTkSuQmCC" alt="n" title="n" />-order matrix</p>
+<p><br /><img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOsAAABkBAMAAACVwtrrAAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAEImrmXYi3TJEu+9UzWb0kky/AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAE30lEQVRoBe1aPYgTQRR+lzPrJXfeD3J2womHYiP+gGgjh6KNhUFUtFsVcyii1yhYuY2NFid4hYJKSgsLSyt/Cq2CHhaC3SnaqYhwYiHE92bnzc4Os7OjyUaRHTbZmW/em2/mZZJ87BsAa+l0Ola8F+CVTifKGGe53c7o6R6+036VRfuj+9EdI4yVtBSdMsiOPfKbXf/klnrZDs1l+EGmF7ZHPr1IUOdqV0ytmkpMRc0PMpxEcw+8TmAn7WcYgqBFlyoSej6tEJBQ+3ACWWqjixDBWe5w0j5Gq/dzdKkSQwONwSkDgq/1JQVZKsPYO7qRO1y0wXe0Cubo4iKh2iJOXha2Ct20F0K0n2UnF+3QV4AwTctQWJnhERiCteMM2e7zuAKkndz0IcRuFy1cgqpByxCsJOe4SKuRBwwAnMIZ8Eui6HAUaZ/+qCwh4qQ9+eWdEWSQEOxKOBgabCjsegTALwkGm7+MI+1QaxD73LTkkQ4yIQRVo1BU+S2YG10cneNW5n0Wqo1h6nWulgzstO01ydJiq1qjsoVqzjIL9ejmGTTJpV1YDvFKDbaw3Ox0pgwo/Dg9noIsjdrBo3VYvYQ9ubQW7x5AJa0IYqkuerCX5BDlliq3VO92kxjJvaX8ZKLFyjJLP+X4CD39ZKLFysIKKeU4HNlMEKNfKdKEqBFN5YiQqRyx7aEcRw7NSDZnkFEmkkY0lCNC6wzlSFYeynEStnnQkiYkjYj/9Fwk9NZQjmTloRzvYvzi4lqt0IRhZUajZQhRkIUhD+UYwLSvckSNqNEK5Uiy0VCO2PZRjnDJVzmiRtRpSSaSbDSUI7U9lOPgDV/liBpRp6XIImQqx2p03kc5Hgt8lSNqRJMWIVM5ttcc91COI89OeyrHADWioRwR2mAoR7LyUI4XOt905Tiwfl/jNO9Mee+DqNkYQeVy32nrLQD69qVK8as9QHK+lSLtw3Op2k9ifNpv2vpDg1E0Cw/y2Bam3bsdi/yTKJ62gbQBU/O9cNphor3FdHwvnHZFi/7Nia6vQYaLAFd5kepe+Gqhuu1IpOi4UjwtM6Xuf5mWHi8ZxQ8ynERTebq0lLCkx0tG8YDU+GlX5ZlLm/bzbanxMxwKos1gU3BJK0LBXyDL5vCDgq0qpKqiPHODbNkcftDQI8WmKsozl1a59LTyX9Kqz9IMVeZq35iWf9JWn6XpvCo0EdnueifbxlWrz1wt01om7AfZaJVnLq3Nu3uspBUx5M+2+4DaRiiDXAbZti+6wMotVW6pLraPzdW9pSxZAD/IQuWXK6DfZEsWwA+ysKZzBc7VUq6AipYsYEhLFjDkThaIUyZqOk5aOlJCRUsWSIiSA6IL39jKnSygUyZJcdGK8yNkmjzZZUg7ZsIQuJMF4pSJ4nXR0nPIE4fu7ddoFRRWZuQYCnInC+Zx9pQoiJMFLlpKDJwbizZrtArSkgVspSULSCHyS86OTplQoiBOFjhpKTFwDXbqtAxpyQIFJckCUoj8krR0yoQSBXGywElLHkfgoU7LkJEsQCuPYyaUKIiTBbm092s7biRbSkydICNZgNDt/GQBJQriZEEubWtgNxjJAoQoOSCmIN/IKj9ZQImCOFmQS6sP3rt6SSti+bPZ7F1MjZGazfnIgLhZ5GnsJ9mnsScmJngGPb/T2L8ADR74c4/6TWgAAAAASUVORK5CYII=" alt="
+C =
+\begin{bmatrix}
+    c_{11} &amp; c_{12} &amp; c_{13} &amp; \dots  &amp; c_{1n} \\
+    c_{21} &amp; c_{22} &amp; c_{23} &amp; \dots  &amp; c_{2n} \\
+    \vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+    c_{n1} &amp; c_{n2} &amp; c_{n3} &amp; \dots  &amp; c_{nn}
+\end{bmatrix}
+" title="
+C =
+\begin{bmatrix}
+    c_{11} &amp; c_{12} &amp; c_{13} &amp; \dots  &amp; c_{1n} \\
+    c_{21} &amp; c_{22} &amp; c_{23} &amp; \dots  &amp; c_{2n} \\
+    \vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+    c_{n1} &amp; c_{n2} &amp; c_{n3} &amp; \dots  &amp; c_{nn}
+\end{bmatrix}
+" /><br /></p>
+<p>such that <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASMAAAA0BAMAAAAzqkOJAAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAVGYimYnNMu/ddhCru0SrWEFXAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAELElEQVRYCe1XXWgUVxQ+s5NJdnd2xw0mfagPGaUKYqjzFJVq01oEHwTXgIp5kAXRJ6kr+qCIZG1eCkIT+rpQNoQgpBbGVkGlJUHRQgllEUTwxUG0TxUiKaS16Hju7/zsZNaEsE7LHtg53z33O+d8987s7h2Altvtox9ZLW8a37CwqJnxjJbPdtVz5ZY3jW+YraXjCa2fzZf//LT1XWM75uFnM5bQnmzvQHsH/r87MPb318TGXNctJGSVW18zIWq/W0qIpLxb40puLCZEkj4mlfSsXFJ2ZX/bV6I7jvwj4potEPXLaKM+CWS+62DXfDRTc2cjJ5bV5kVkiWZBo74E49TL6InltDkYKJFyAkM++LghqBUbQixw07UiZ4JtIiky+KVEBLyrpE4nkOYNjCW+/f42yvq1XoJE090lhvWXHxZktImk7MQHgjrTPSFgyO//ywt4CYE2e+C4xxEob+ZmGVYW4LKIoo/dpQcwJ6h9VtoWOOgzriMDXoK/TaoEZegFGEdexxyxIqJNkDMxugtjRfiGeEqQks6XAcQH59izhKXugELSAfZA2qEgg1evLg5UVy6RJ/xSY230xziN/LSJ3gaw0Hn2FaQtsFNHkOLoi8RTwr65+yfn7uHgnON9sOEJuhAsNQo6K/IdzKBqNJWNfVfxp0J7k4Scw9rA74w/GNTCUtUFOEfQDoAZW5knnlvcjRu0uiqcpv8LfSIl7HPyZ4AnkI2kbcYZdQQXkp2FjWRNcoO75uEHA6MoZTvki8RTgrxxoTbsxo1Atu5c1aeefgFqBR5SkDrsr0vTOmsimyXAgHKUtlFLvQ7hZyyYNKvKtaLgUX9ZPZ4yq0RKBv4guyUIcbuUtgeKGzLX1pSH8MkzSgoB6/AxDZn8CgBLsHu2XKFtlN23y4SvDm2w1ZLeUQgkPu/e+b1aIpKMYRS7AwQhTpJxYO1v9gBchF8Bnk8BBfbngbo40EoywhP2Ym/SpuMSPtWcj+/onZYkCoBRlEQNPSfESaLUIZiGCsui4BjD3nWz7WGChqA6zCKZGzUAzs/8CBHvxBj1SeIE/oViNeTV16VqPjLuOnSGgookMWCMhgLVLeO9Z2jslnLYEsvRJnGTG0ybNPZP0ijxEYSGDBIYtur6HTZDQFc9xNru8IDO1zG87bPrJo2d1Xf7+dOcuKRrSojOzNaCcf1bMe4QIOA9frHhlgeIAE0JIT4fauFntLMoiP0C+L2P/6Dgn4jATQkRORjKrw/F5S/AzjehGTps4EeRVjemVWm9n04fciurW3nF1frwBY6bvIMrLrY6iVMHpfEv3OrUbVdp70ACdoCeZYkOtZ4ANUwCOcsS2zjOfAKuQokqwHvXRM6yVERyJOFZ9sI+fDGzkiOJnGUTtkv0LEs0JWeX8Cz7CXmjTtCNI2dZas9eWQz8J65vAQbWGf8fWKjXAAAAAElFTkSuQmCC" alt="c_{ij} = a_{i1}b_{1j} + \dots + a_{in}b_{nj} = \sum^{n}_{k=1}a_{ik}b_{kj}" title="c_{ij} = a_{i1}b_{1j} + \dots + a_{in}b_{nj} = \sum^{n}_{k=1}a_{ik}b_{kj}" />,</p>
+<p>for <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFEAAAARBAMAAABX+V1pAAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAVO8QIkRmmTKJ3Xaru83EXUi2AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAyUlEQVQoFWNgIB4wKqCoZb6KwkXmMDsg81imfUXm4mVTQSVrOpoNmGYy7jbLCWBgMGNqQFWKqdLUP4HxAQNDgD9IYc0ZIDgJ1oKpMkCKgfsCUG46WB5BYKpkqGTg2QBUoIFQBGZhUanKwO/AwMC4AOhY/LazfGCQYmVg4JwAMhgJAM30MQBhlsMQgoHtAUMlNwMDRxlQGAGY5/6bwdCUwMDQ1MChASLUgIYlMHRuRihBYQkgeIwIJjYW0Sq5kRyEy1qIBcg2wo0HANYxLd1d9NTQAAAAAElFTkSuQmCC" alt="i = 1, ..., n" title="i = 1, ..., n" /> and <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFUAAAAQBAMAAACVTi62AAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAMkRmmRCrVN2Jze8iu3YMgbUpAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAA3ElEQVQoFWNgwACslzCEEALyCCaQxTP5EwoflcOIymXApxZNKT61yq5oijHNZX8XbKYAVMUkkExQbdB5A/YFQFXsDO0gtW5pQJAJYmFxg0IFA98FkBTrVxCJBDDdwODJwPYApIKpAUQiASxqNzHwHwCp4HQAkXjdwPOBoYIJpIqrAEQiAaC5xwJAmCcVQjAwL2Dw5AOp4AeKIwHWub8mMkgbMDBICzBuBBGbgVYbMEg+BanRQFIIZyLZxQ4XZAD6EQvAqjZaZisWpXxI7gJbDlYTa3IAi1pke+FWAAD6AyzzOxaQbQAAAABJRU5ErkJggg==" alt="j = 1, ..., n" title="j = 1, ..., n" />.</p>
+<p>There are many different software approaches to perform matrix multiplications, such as permuting the i-j-k loop order for example, some of which we will explore in this project.</p>
+<h2 id="goal"><span class="header-section-number">4.2</span> Goal</h2>
+<p>You will write a program named <code>mmm.c</code> that receives two command line arguments. The first argument indicates the software approach to use in order to perform the matrix multiplication, and the second argument defines the matrix order. Before quitting, the program displays the time it took to complete the matrix multiplication, as well as some checksum values to make sure that the result of the product is correct, and that the operands have not been changed.</p>
+<p>Example showing four runs, with two different i-j-k permutations and two different matrix orders:</p>
+<div class="highlight"><pre><span></span><span class="gp">$</span> ./mmm ijk <span class="m">500</span>
+<span class="go">Running time: 0.147935 secs</span>
+<span class="go">A: 1019903034</span>
+<span class="go">B: 408807171</span>
+<span class="go">C: 4120804374</span>
+<span class="gp">$</span> ./mmm ijk <span class="m">1000</span>
+<span class="go">Running time: 2.206009 secs</span>
+<span class="go">A: 707629981</span>
+<span class="go">B: 1180118565</span>
+<span class="go">C: 1795483213</span>
+<span class="gp">$</span> ./mmm kji <span class="m">500</span>
+<span class="go">Running time: 0.167482 secs</span>
+<span class="go">A: 1019903034</span>
+<span class="go">B: 408807171</span>
+<span class="go">C: 4120804374</span>
+<span class="gp">$</span> ./mmm kji <span class="m">1000</span>
+<span class="go">Running time: 6.852745 secs</span>
+<span class="go">A: 707629981</span>
+<span class="go">B: 1180118565</span>
+<span class="go">C: 1795483213</span>
+<span class="gp">$</span>
+</pre></div>
+
+<p>A working example of the program can be found at <code>/home/cs158/public/p1/mmm_reference</code></p>
+<h2 id="constraints"><span class="header-section-number">4.3</span> Constraints</h2>
+<p>Your program must be written in C, be compiled with GCC and only use the standard functions provided by the <a href="https://www.gnu.org/software/libc/manual/">GNU C Library</a> (aka <code>libc</code>).</p>
+<p>Your program cannot be linked to any other external libraries, apart from the <code>pthread</code> library (starting from Phase 3).</p>
+<p>Your source code should adopt a sane and consistent coding style and be properly commented when necessary.</p>
+<p>Extra constraints are defined below. Not respecting these constraints will affect your score for the manual review.</p>
+<h2 id="assessment"><span class="header-section-number">4.4</span> Assessment</h2>
+<p>Your grade for this assignment will be broken down in two scores:</p>
+<ul>
+<li><p>Auto-grading: ~50% of grade</p>
+<p>Running an auto-grading script that tests your program and checks the output against various inputs</p></li>
+<li><p>Manual review: ~50% of grade</p>
+<p>The manual review is itself broken down into different rubrics:</p>
+<ul>
+<li>Report file: ~50%</li>
+<li>Submission : ~5%</li>
+<li>Quality of implementation: ~25%</li>
+<li>Phase 4: ~10%</li>
+<li>Code style: ~5%</li>
+<li>Makefile: ~5%</li>
+</ul></li>
+</ul>
+<h1 id="suggested-work-phases"><span class="header-section-number">5</span> Suggested work phases</h1>
+<h2 id="phase-0-preliminary-work"><span class="header-section-number">5.1</span> Phase 0: preliminary work</h2>
+<h3 id="copy-file"><span class="header-section-number">5.1.1</span> 0.1 Copy file</h3>
+<p>In this preliminary phase, copy the few provided files from <code>/home/cs158/public/p1</code> to your project directory:</p>
+<ul>
+<li><p><code>mmm.c</code>: an (almost empty but compilable) skeleton C file that you will need to complete in the next phases.</p></li>
+<li><p><code>matrix_checksum.c</code>: a source file containing a CRC32 function to compute the checksum of a matrix.</p></li>
+</ul>
+<h3 id="makefile"><span class="header-section-number">5.1.2</span> 0.2 Makefile</h3>
+<p>Write a simple Makefile that generates the executable <code>mmm</code> from the files <code>mmm.c</code> and <code>matrix_checksum.c</code>.</p>
+<p>The compiler should be run with the <code>-Wall</code> (enable all warnings), <code>-Werror</code> (treat all warnings as errors), and <code>-O2</code> (second level of optimizations) options.</p>
+<p>There should also be a <code>clean</code> rule that removes any generated files (executables, etc.) and puts the directory back in its original state.</p>
+<h2 id="phase-1-memory-access-patterns"><span class="header-section-number">5.2</span> Phase 1: memory access patterns</h2>
+<p>For this phase, I would strongly recommend going through these slides first: <a href="https://cs61.seas.harvard.edu/wiki/images/0/0f/Lec14-Cache_measurement.pdf" class="uri">https://cs61.seas.harvard.edu/wiki/images/0/0f/Lec14-Cache_measurement.pdf</a></p>
+<p>You will find a lot of very valuable information and visual explanation related to this programming project.</p>
+<h3 id="command-line-arguments"><span class="header-section-number">5.2.1</span> Command line arguments</h3>
+<p>Your program should receive two command line arguments. The software strategy for the matrix multiplication and the matrix order (<img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAIBAMAAADdFhi7AAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAVHYQZqtEIs3du5mJ7zKFHavXAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAP0lEQVQIHWNgVDJxTWBgMKt3YGxgYEiQZGBawMDAsIeBVQFIXWPgL2BgYP/AIMnGwMDSwLCHiYGBx4HhjTIDAAXECXd0e4hoAAAAAElFTkSuQmCC" alt="n" title="n" />).</p>
+<p>For this phase, the software strategies are all the 6 possible permutations of the i-j-k loops: “ijk”, “ikj”, “jik”, “jki”, “kij” and “kji”.</p>
+<p>Matrices A and B should be initialized such that: <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFEAAAATBAMAAAAaMfxiAAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAdlTNu2ar7yIyRBCJ3ZkRO47qAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABJ0lEQVQoFaWPPUvDUBSG37Qe0iStFgdnwUFBBSdx7OIehE6CINJMDo6KS6A/wI5O9iwdhTsIOkbBQeggri7FwUUHdxfvR24+TAbBO5z3eZ8cchPg32f1z2+4K2+Oy7XaiFPnVZ+VDXGhO4srhWZxMtNErAOTD5m7iEwrziA805VYhz8aALSFARoJOkrNR+okgN/6Uh3EcgANvABuiFMEQEurbLRnEt+jo+3oWLngG7iIvRPFv4470oLYeP8ZGMPp8RLoSansdmz6eoVYB9QVrhgm/Y5Y3zDKzqmjidiI5rL89oe1QzGEeDPKzqt9TcRGLAiTeAR2UiwHsenXVr+GqPst+c/pxqfdvI+9nuWavL08z63TzblCNwdx5trNnDNZC3N7tboofwClpjbiElVAtwAAAABJRU5ErkJggg==" alt="a_{ij} = i + j" title="a_{ij} = i + j" /> and <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGoAAAATBAMAAACKIoWtAAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAdjIiu0SJzRBU75ndq2aQ9bOIAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABgUlEQVQ4EZWSP0jDQBTGv1iTJv1nxUUQIaCbg51dxMFVMygiSDmXzgXRTQjoooNtFwdxEEFw0uIgLkLoILp10imSQaTgUnTRqd69JI1trwUf9N37ft99vUsIoJj4f8WWpZkTKRUwM7HI+4rU3+uks5FsYL4MFCLQM2WsAA1FVg1pB9iOQM/UTvkOE8sVtCb0nwo/sLvyVSJhKn9H0vG38bOML1z64k/XvXNSQUo1X7lMs/ob0VIZSYYLHAMOB0lXFAPUWJP8IGXgSchJd5zoApCy9E/YQI5A2DRxw3v3Zdd9Fkj/Fl15sGnJAiXb8P9XgHYlTBrD51IdLjO1mx1BK/w3h2Gm1PFu8rl9Q5yqXPKNFi2go1UUBVU9ZJHCGrxH44D5ftALCg1hKl4meSb6zOp6FeomQ6yoJ31OprAaNIWpEZsk9etWq05K8xDP0dTVwtRGFyeZOkJCxqEH9FbmamOYlvGAHU71fge+NTogtf8hvT7Atgak+lpLna+w777A+AXqxFJxTnSsMgAAAABJRU5ErkJggg==" alt="b_{ij} = i + j * 2" title="b_{ij} = i + j * 2" /> for all <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAAAQBAMAAACsKZ/tAAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAVHZmRLvNMqvvIhCZid3z3kwTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABCElEQVQoFWNgIBIIGTnAVLILgFiSMC4yzRLAkA7ls8RsALF2IUvD2KwCDBYQNmMuWBVMgoGBpQvB5i9g8ATzmJPQVDEHI1QxrF/AUA+SZ0qGCjofgDA2BYJpRqXNFg4MDPVAZQsYGLgmQyQZuA2mg1lrWiACW9YbMCbAlTGI3YYIs3B9ADFWnIJwGRzkGJgCGBjWFzD4gx3lCpXgPYCijOEsA4cCAwO/AyygKiAe4ywAm7OmHUwxMExh4F/AwMBqwKABFVgRDmLIsUC4eyFeALoBJAIM3iyoMoY9CkDWXSYoFxIgzAkMZ0EiQjYOUHEIVWMN4zJGAVm8Bgy12jARKtPsoSCggMtUAKuMMXWmHoX/AAAAAElFTkSuQmCC" alt="0 \leq i &lt; n" title="0 \leq i &lt; n" /> and <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAE0AAAAQBAMAAAChN++qAAAAMFBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv3aB7AAAAD3RSTlMAVHZmRLvNMqvvIhCZid3z3kwTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABJElEQVQoFWNgEDJyYIACdgEYC5NmCWBIh4qyxGwAs+oxVTEwsAowWEDEGXMhyhjYYepYumAsBgb+AgZPMI85CaoMLsccDGcyMKxfwFAPUsCUDBN0Pg1hbQoE04xKmy0cGBjqgeoWMDBwTYZIMjCwFDSDmWtaICJb1hswJsDVMYjdhipkZHgIYq04BeU7yDEwBQDtLWDwBzvMFSbB/RtFHcNZBg4FoD8cGCQhOiugvmN5AOavaYcIM0xh4F8ADBcDBg2owIpwMIP3AIS/F+IPrg8McixAZwcwZEHVMexRALHYBKB8SLgwJzCcZQKKCNk4QMWhFD/YuSAOYxSQ4DVgqNWGSqFQfig83JyzuKUYGNhDQUCBgWFn1Wx86uByW20WwNlIDABIMjZEJtLeygAAAABJRU5ErkJggg==" alt="0 \leq j &lt; n" title="0 \leq j &lt; n" />.</p>
+<p>We arbitrarily assume the matrix order to be a positive number with an upper bound of 2000.</p>
+<p>Your program should display appropriate error messages (to <code>stderr</code>), when the arguments are incorrect:</p>
+<div class="highlight"><pre><span></span><span class="gp">$</span> ./mmm
+<span class="go">Usage: ./mmm &lt;ijk_order&gt; N</span>
+<span class="gp">$</span> ./mmm toto
+<span class="go">Usage: ./mmm &lt;ijk_order&gt; N</span>
+<span class="gp">$</span> ./mmm toto <span class="m">10</span>
+<span class="go">Error: wrong &lt;ijk&gt; order</span>
+<span class="gp">$</span> ./mmm ijk titi
+<span class="go">Error: wrong matrix order (0 &lt; N &lt;= 2000)</span>
+<span class="gp">$</span> ./mmm ijk -1
+<span class="go">Error: wrong matrix order (0 &lt; N &lt;= 2000)</span>
+<span class="gp">$</span> <span class="nb">echo</span> <span class="nv">$?</span>
+<span class="go">1</span>
+<span class="gp">$</span>
+</pre></div>
+
+<p>Any error should make the program exit with error code 1.</p>
+<h3 id="checksums"><span class="header-section-number">5.2.2</span> Checksums</h3>
+<p>After completing the matrix multiplication, your program should call the function <code>matrix_checksum()</code> on all three matrices (A, B and C), and display their checksum.</p>
+<div class="highlight"><pre><span></span><span class="cm">/* Define function prototype somewhere in your C file */</span>
+<span class="kt">unsigned</span> <span class="kt">int</span> <span class="nf">matrix_checksum</span><span class="p">(</span><span class="kt">int</span> <span class="n">N</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">M</span><span class="p">);</span>
+<span class="p">...</span>
+<span class="cm">/* Display matrix checksums */</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;A: %u</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">matrix_checksum</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">A</span><span class="p">));</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;B: %u</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">matrix_checksum</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">B</span><span class="p">));</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;C: %u</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">matrix_checksum</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">));</span>
+</pre></div>
+
+<p>This CRC32 checksum combines all the values contained in a matrix and computes a scalar value, somewhat similar to a hash. The goal is to make sure that all the software strategies calculate the correct matrix multiplication, without altering the operands.</p>
+<h3 id="constraints-1"><span class="header-section-number">5.2.3</span> Constraints</h3>
+<p>Matrices A, B and C should not be defined as global variables. They should exist only as local pointers in your main function, and passed to functions as arguments.</p>
+<p>Although matrices are 2-D objects, they should be allocated as 1-D arrays to make sure that their memory layout is contiguous. Remember that it is easily possible to access a 1-D array as a 2-D structure (<code>N</code> being the number of columns):</p>
+<div class="highlight"><pre><span></span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="n">N</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span>
+</pre></div>
+
+<p>Make sure to separate your code into independent generic functions, called by the main function.</p>
+<h2 id="phase-2-timing"><span class="header-section-number">5.3</span> Phase 2: timing</h2>
+<p>In this phase, you will add timing measurement to your program in order to evaluate the performance of each strategy.</p>
+<p>You should use the function <a href="https://linux.die.net/man/3/clock_gettime"><code>clock_gettime()</code></a> and use the clock <code>CLOCK_MONOTONIC</code>.</p>
+<p>Start measuring the time right before starting the matrix multiplication, and stop right after the computation is finished. Display the timing result as shown in the example below.</p>
+<div class="highlight"><pre><span></span><span class="gp">$</span> ./mmm kji <span class="m">1000</span>
+<span class="go">Running time: 6.852745 secs</span>
+<span class="go">...</span>
+</pre></div>
+
+<h3 id="performance-measurements"><span class="header-section-number">5.3.1</span> Performance measurements</h3>
+<p>Run your program with different matrix sizes (e.g., 50, 200, 500, 1000, and 2000) and for all the strategies. Run each pair at least 3 times and average the timing value.</p>
+<p>Present the values in your report (e.g., as a table or a chart), and <em>discuss</em> the results you are getting. Do not just repeat what the numbers show, but offer some insight about the relationship between the memory access patterns and performance.</p>
+<h2 id="phase-3-task-level-parallelism"><span class="header-section-number">5.4</span> Phase 3: task-level parallelism</h2>
+<p>Improve your program by adding a new strategy called “pthread”. This strategy should use the best i-j-k loop order you found in Phase 2, and find a way to parallelize the matrix multiplication by using multiple threads.</p>
+<p>For example, a naïve strategy would be to spawn a new thread for the calculation of each <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAAOBAMAAADQ9FGEAAAALVBMVEX///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAOrOgAAAADnRSTlMAVGYimYnNMu/ddhCru4YWfk0AAAAJcEhZcwAADsQAAA7EAZUrDhsAAABqSURBVAgdY2BgVBRmgABXhlQIgymBoYBBlIFhAgOHAlBkAwODAYOdAUSOgaGOgYGZ6wCDagEDpwHDYoXZjBsDGJiDlDYwJ3CzCIAVsSowsEGUc25i4IDoY13MUAszgWEVjBWQDGNdEmAAAO5aDnGRkhktAAAAAElFTkSuQmCC" alt="c_{ij}" title="c_{ij}" /> value:</p>
+<div class="highlight"><pre><span></span><span class="cm">/* ijk */</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span><span class="o">&lt;</span><span class="n">n</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">spawn</span> <span class="n">thread_ij</span> <span class="p">{</span>
+            <span class="n">sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">k</span><span class="o">&lt;</span><span class="n">n</span><span class="p">;</span> <span class="n">k</span><span class="o">++</span><span class="p">)</span>
+                <span class="n">sum</span> <span class="o">+=</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">];</span>
+            <span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+<p>I would not advise to try this strategy. Would you know why?</p>
+<p>All CSIF computers have 8 cores, so you should assume that 8 independent threads can be executed simultaneously for this project. You should therefore find a way to split the matrix multiplication into 8 parts that can be executed in parallel.</p>
+<p>Run your multithreaded implementation on the same matrix sizes as the previous phase, and explain your strategy and your findings in your report.</p>
+<h3 id="constraints-2"><span class="header-section-number">5.4.1</span> Constraints</h3>
+<p>All the information a thread needs should be received by function argument. You have to create a specific data structure containing these information, and that can be passed to a thread upon creation. Do not create global variables.</p>
+<h2 id="phase-4-improving-performances"><span class="header-section-number">5.5</span> Phase 4: improving performances?</h2>
+<p>The goal of this phase is to take your multithreaded implementation and try to improve upon it even further. A few possibilities would be:</p>
+<ul>
+<li><p>Improving the temporal locality by blocking.</p>
+<p>In this strategy, the matrices are divided into smaller sub-blocks, and each sub-block is computed separately.</p></li>
+<li><p>Using the SIMD extensions of the processor.</p>
+<p>In this strategy, you can use the API of Intrinsics as defined by Intel processors and write SIMD code. Processors in CSIF computers support up to the AVX-2 extensions.</p></li>
+<li><p>Mixing blocking and SIMD instructions.</p></li>
+</ul>
+<p>You are allowed to explore other ways that are not listed here.</p>
+<p>Explain your strategy in your report, and discuss the results you are getting with it.</p>
+<h3 id="constraints-3"><span class="header-section-number">5.5.1</span> Constraints</h3>
+<ul>
+<li>For this phase and if it helps, you can assume that the matrix order is necessarily a multiple of 8.</li>
+<li>In this phase, you allowed to play with compiler options, but in such case, you should compile another executable than the one being used by the autograder (namely <code>mmm</code>). The executable generated up until phase 4 shall be compiled with <code>-O2</code> only.</li>
+</ul>
+<h1 id="submission"><span class="header-section-number">6</span> Submission</h1>
+<p>Since we will use auto-grading scripts in order to test your program, make sure that it strictly follows the specified output format.</p>
+<h2 id="content"><span class="header-section-number">6.1</span> Content</h2>
+<p>You should submit the following files:</p>
+<ul>
+<li><p><code>AUTHORS</code>: student ID of each partner, one entry per line. For example:</p>
+<div class="highlight"><pre><span></span><span class="gp">$</span> cat AUTHORS
+<span class="go">00010001</span>
+<span class="go">00010002</span>
+<span class="gp">$</span>
+</pre></div>
+</li>
+<li><p><code>report.pdf</code>: a write-up describing your implementation for each phase, presenting the results you obtained, and discussing them.</p>
+<p>Your report should probably be at least two full pages.</p>
+<p>Keep in mind that the report should <strong>not</strong> paraphrase the assignment (e.g., don’t re-explain how the matrix multiplication works).</p></li>
+<li><p><code>Makefile</code>: a simple Makefile that compiles your source without any errors or warnings (on CSIF computers), and builds an executable named <code>mmm</code>.</p></li>
+<li><p><code>mmm.c</code>: your source code.</p></li>
+</ul>
+<p>Do not include file <code>matrix_checksum.c</code>.</p>
+<p>Your submission should be empty of any clutter files (such as executable files, core dumps, backup files, and so on).</p>
+<h2 id="git-bundle"><span class="header-section-number">6.2</span> Git bundle</h2>
+<p>Your submission must be under the shape of a Git bundle. In your git repository, type in the following command (your work must be in the branch <code>master</code>):</p>
+<div class="highlight"><pre><span></span><span class="gp">$</span> git bundle create p1.bundle master
+</pre></div>
+
+<p>It should create the file <code>p1.bundle</code> that you will submit via <code>handin</code>.</p>
+<p>Before submitting, <strong>do make sure</strong> that your bundle was properly been packaged by extracting it in another directory and verifying the log:</p>
+<div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> /path/to/tmp/dir
+<span class="gp">$</span> git clone /path/to/p1.bundle -b master p1
+<span class="gp">$</span> <span class="nb">cd</span> p1
+<span class="gp">$</span> ls
+<span class="go">AUTHORS Makefile mmm.c report.pdf</span>
+<span class="gp">$</span> git log
+<span class="go">...</span>
+</pre></div>
+
+<h2 id="handin"><span class="header-section-number">6.3</span> Handin</h2>
+<p>Your Git bundle, as created above, is to be submitted with <code>handin</code> from one of the CSIF computers by <strong>only one person of your group</strong>:</p>
+<div class="highlight"><pre><span></span><span class="gp">$</span> handin cs158 p1 p1.bundle
+<span class="go">Submitting p1.bundle... ok</span>
+<span class="gp">$</span>
+</pre></div>
+
+<p>You can verify that the bundle has been properly submitted:</p>
+<div class="highlight"><pre><span></span><span class="gp">$</span> handin cs158 p1
+<span class="go">The following input files have been received:</span>
+<span class="go">...</span>
+<span class="gp">$</span>
+</pre></div>
+
+<h1 id="academic-integrity"><span class="header-section-number">7</span> Academic integrity</h1>
+<p>You are expected to write this project <strong>from scratch</strong>, thus avoiding to use any existing source code available on the Internet. Asking someone else to write your code (e.g., on website such as Chegg.com) is not acceptable and will result in severe sanctions.</p>
+<p>You must specify in your report any sources that you have viewed to help you complete this assignment. All of the submissions will be compared with MOSS to determine if students have excessively collaborated, or have used the work of past students.</p>
+<p>Any failure to respect the class rules, as explained above or in the syllabus, or the <a href="http://sja.ucdavis.edu/cac.html">UC Davis Code of Conduct</a> will automatically result in the matter being transferred to Student Judicial Affairs.</p>
+</body>
+</html>

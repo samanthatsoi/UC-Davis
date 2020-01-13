@@ -1,0 +1,188 @@
+---
+title: "ECS 132 - Homework 2"
+author: "Sam Tsoi, sgtsoi@ucdavis.edu, 913032178"
+date: "10/8/2018"
+output: html_document
+---
+
+# Problem 1 / Independence of Events
+For the following events A and B, as defined as
+A:  The first card is a Red Card (Hearts or Diamonds).
+B:  the second card is a Number Card (cards 2 through 10 of any suit).
+$P(A) = 1/2$
+$P(B) = 9*4/52 = 36/52 = 9/13$    
+$P (A \cap B) = 0$ because the deck is shuffled each draw and it is replaced. Whether the second first card is drawn to be red does not affect  
+whether the second card is a number card, and vice versa.
+So $P (A \cup B) = P(A) + P(B) - P(A \cap B) = 1.1923$
+Therefore, events A and B are independent.
+
+by adding 4 Kings of Hearts, $P(A) = (30/56)$ and $P(B) = 36/56$
+$P (A \cap B) = 0$ for the same reason above. The drawing of the first card is replaced and shuffled and would not change the probability  
+that the next card drawn.
+$P (A \cup B) = P(A) + P(B) - P(A \cap B) = 30/56 + 36/56 - 0 = 1.1786$
+
+# Problem 2 / Conditional Probability
+Given at least one of two is heads. Therefore, suppose S is the set of all the possible outcomes by that friend, S = {HT, TH, HH}.
+Given S, suppose T is the probability that the first coin is head, T = {HT, HH}  
+
+Therefore, P(T|S) = 2/3   
+(this is derived from T/S, which is {HT, HH} / {HT, TH, HH}). The probability that the first coin is heads given the information is 2/3. 
+
+
+# Problem 3 / Bayes' Rule
+$P(A) = .15  
+
+P(Defective|A) = .04  
+
+P(B) = .35  
+
+P(Defective|B) = .03  
+
+P(C) = .50  
+
+P(Defective|C) = .02
+
+To find $P(A|Defective)$, We need to use Bayes' Rule, hence $P(A|Defective) = \frac{P(A) *P(Defective|A)}{P(Defective)}$.  
+  
+  
+Given the law of total probability, $P(Defective) = (.5)(.02)+(.35)(.03)+(.15)(.04)$ =  
+
+```{r, echo=FALSE}
+pdefective = (.5)*(.02)+(.35)*(.03)+(.15)*(.04)
+pdefective
+```
+So, $P(A|Defective) = \frac{.15*.04}{P(Defective)} = \frac{.15*.04}{`r pdefective`}$ = 
+
+```{r, echo=FALSE}
+lap = .15*.04/pdefective
+lap
+```
+Therefore, the probability that the defective chip came from supplier A is `r lap`.
+
+
+
+
+
+# Problem 4 / Random Variables
+## 4.1
+Let X be a random variable that denotes the sum of the values on a roll of 2 dice.
+X = {2,3,4,5,6,7,8,9,10,11,12}  
+2,3,4,5,6,7,8,9,10,11,12 are all the possible values X can take.
+
+## 4.2
+Given $p_j= P(X = a_j)$   for all j where $p_j ≥ 0 and ∑j pj= 1$,
+$x_i$ = {2,3,4,5,6,7,8,9,10,11,12}  
+$P(x_i)$ = {1/36, 2/36, 3/36, 4/36, 5/36, 6/36, 5/36, 4/36, 3/36, 2/36, 1/36}  
+
+Note that the sum of $P(x_i)$ = 1.
+
+```{r, echo=FALSE}
+xvalues =c(2,3,4,5,6,7,8,9,10,11,12)
+pmf =c(1/36, 2/36, 3/36, 4/36, 5/36, 6/36, 5/36, 4/36, 3/36, 2/36, 1/36)
+barplot(pmf,names.arg =xvalues,,xlab ="i",ylab="P(X = i)", main = "PMF of sum on a roll of 2 dice")
+```
+
+## 4.3
+Given the barplot above, 
+E(X) = 7 and P(X = 7) = .166667  
+
+The expected value of X is 7.  
+
+
+
+# Problem 5 / The Binomial Distribution
+Suppose that the microchip a company produces passes inspection at a 95% rate.  If the company sends 10 chips out for inspection.
+
+
+## 5.1
+Let X be a random variable that how many companies pass inspection for their microchip
+$x_i$ = {0,1,2,3,4,5,6,7,8,9,10}
+```{r}
+px0 = choose(10, 0)*((.95)^0)*((1-.95)^10)
+px1 = choose(10, 1)*((.95)^1)*((1-.95)^9)
+px2 = choose(10, 2)*((.95)^2)*((1-.95)^8)
+px3 = choose(10, 3)*((.95)^3)*((1-.95)^7)
+px4 = choose(10, 4)*((.95)^4)*((1-.95)^6)
+px5 = choose(10, 5)*((.95)^5)*((1-.95)^5)
+px6 = choose(10, 6)*((.95)^6)*((1-.95)^4)
+px7 = choose(10, 7)*((.95)^7)*((1-.95)^3)
+px8 = choose(10, 8)*((.95)^8)*((1-.95)^2)
+px9 = choose(10, 9)*((.95)^9)*((1-.95)^1)
+px10 = choose(10, 10)*((.95)^10)*((1-.95)^0)
+
+x = c(0,1,2,3,4,5,6,7,8,9,10)
+y = c(px0,px1,px2,px3,px4,px5,px6,px7,px8,px9,px10)
+plot(x,y,xlab ="i",ylab="P(X = i)", main = "probability of 0-10 chips passing inspection")
+
+```
+
+
+## 5.2
+P(at least 2 of the chips fails inspection) = P(at most 8 of the chips pass inspection) = P(X <= 8) = 1 - P(X=10) - P(X=9) =
+```{r}
+1-px10-px9
+```
+
+# Problem 6 / The Monty Hall Problem
+## 6.1
+The contestant should switch curtains, because initially, when the contestant chooses a curtain, there is a 1/3 chance that it is a car and 2/3 that it is a goat. A curtain that he or she has not chosen that is revealed a goat which leaves the other curtain that is not chosen 2/3 and the current curtain 1/3. if you don't switch, the probability of getting the car is 1/3, thus the probability of getting the goat is 2/3. if you do switch, there is 2/3 chance that you initially picked the goat, and when the goat is revealed, you will pick the car. so there is 2/3 chance of picking the car when you do switch. in order to get the goat, you would have to pick the car before switching. this probability is 1/3. so the probability of getting the car when you switch is 2/3 and the probability of getting the car if you do not switch is 1/3. So you should switch!
+
+## 6.2
+```{r}
+m = 1000 # number of samples to simulate
+curtains = c(0,0,1) #1 if curtain has car, 0 if goat
+prob = numeric(m)
+i = 2
+for (i in 1:m)
+{
+  
+  pick = sample(1:3, 1) #1,2, or 3
+  if(curtains[pick] == 1) #if contestant picked curtain with car at first
+  {
+    #doesn't matter which other curtain he chooses, both of them will be goat
+    switch = sample(1:2,1) 
+  }
+  else #if contestant picked curtain with goat, then the one revealed is known (the other one with goat)
+  {
+    #if picked 1, reveal must be 2, so switch must be to 3
+    if(pick == 1)
+    {
+      switch = 3
+    }
+    #if picked 2, reveal must be 1, so switch must be to 3
+    if(pick == 2)
+    {
+      switch = 3
+    }
+  }
+
+  
+  if(curtains[switch] == 1)
+  {
+    prob[i] = 1
+  }
+  else
+  {
+    prob[i] = 0
+  }
+  
+}
+#probability of winning the car =  # of 1s in prob/total number of trials
+disp = as.data.frame(table(prob))
+disp$probability = disp$Freq/m
+disp
+```
+
+```{r}
+plot(disp$prob, disp$probability, xlab = "what is behind the curtain", ylab = "probability", ylim = c(0,1), main = "probability of what is behind the curtain if always switched")
+axis(1, at=1:2, labels=c('goat','car'))
+```
+  
+  
+# Classmate Collaborators
+
+Include the names and email IDs of everyone you collaborated with.
+
+1. Kayla Peters, \{kaypeters\} [at] ucdavis [dot] edu, 913627392
+
+

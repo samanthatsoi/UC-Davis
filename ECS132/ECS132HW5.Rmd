@@ -1,0 +1,280 @@
+---
+title: "ECS 132 - Homework 5"
+author: "Sam Tsoi, sgtsoi@ucdavis.edu, 913032178"
+date: "11/5/2018"
+output: html_document
+---
+
+#  Problem 1 / Properties of Markov Chain Transition Matrices
+
+_The following are transition matrices with missing transition probabilitiesa,b, andc.  What arethe values ofa,b, andc?1.0.3   0.3a0.1b0.4c0.8   0.12.0.1a0.5b0.6   0.20.7c0.1_
+
+## 1.1
+0.3 + 0.3 + a = 1  
+a = .4  
+
+0.1 + b + 0.4 = 1
+b = .5    
+
+c + 0.8 + 0.1 = 1
+c = .1  
+
+## 1.2  
+0.1 + a + 0.5 = 1  
+
+a = 0.4  
+
+b + 0.6 + 0.2  = 1  
+
+b = 0.2  
+
+0.7 + c + 0.1 = 1  
+c = 0.2  
+  
+  
+# Problem 2 / Branch Prediction
+_You may recall from your course in Computer Organization that control statements in high-levelprogramming languages are compiled down to branch statements in assembly language.  Due tocertain factors which you will learn about in later Computer Architecture courses, branch predictionremains a highly-researched topic in the Computer Architecture research area.  There are significantperformance gains which can result from correctly predicting branches.  Perhaps the informationabout whether or not a previous branch was taken tells us something about the current branch.Let’s model it in a simple 2-state Markov Chain.  Let state 0 be that the branch was not taken andstate 1 represent that the branch was taken.  Letα= 0.9 andβ= 0.1 as shown in Figure 1._
+
+## 2.1
+_Write out the transition matrix for this chain and find the missing probabilities._  
+\begin{equation}
+P =
+\begin{bmatrix}
+    1-\alpha       & \alpha \\
+   \beta & 1-\beta \\
+\end{bmatrix}  
+= 
+\begin{bmatrix}
+    0.1       & 0.9 \\
+   0.1 & 0.9 \\
+\end{bmatrix}   
+\end{equation}  
+
+## 2.2
+_What are the steady-state probabilities for this chain?_  
+\begin{equation}
+\begin{bmatrix}
+  \lambda_1 \lambda_2
+  \end{bmatrix}
+\begin{bmatrix}
+    0.1       & 0.9 \\
+   0.1 & 0.9 \\
+\end{bmatrix}= \begin{bmatrix}
+  \lambda_1 \lambda_2
+  \end{bmatrix}  
+  \end{equation}
+A = \begin{bmatrix}
+    0.1       & 1 \\
+   0.1 & 1 \\
+\end{bmatrix}
+
+```{r}
+a=matrix(c(0.1-1, 0.1, 1,1), 2,2, byrow = F)
+inva = solve(a)
+#lambda = [0 0 1] * inv(A)
+lambdas = inva[2,]
+lambdas
+
+```
+
+Therefore,   $\lambda_1$ = 0.1 and $\lambda_2$ = 0.9
+
+
+## 2.3
+
+_3.  Consider that you have taken the branch and are therefore in state 1.  Model the transitionback to not taking a branch with a Geometric Distribution (withβbeing the probability ofsuccess).  What is the probability that it will take 3 or less “taken’s” (“failures”) before nottaking a branch (“success”)?_  
+X~Geometric(p=$\alpha$)
+X~Geometric(p=0.9)
+Starts at state 1. First needs to go to state 0.
+P(0 taken, then success) = 0.1
+P(1 taken, then success) = 0.9 * 0.1
+P(2 taken, then success) = 0.9 * 0.9 * 0.1
+P(3 taken, then success) = 0.9 * 0.9 * 0.9 * 0.1
+
+```{r}
+0.1 + (0.9 * 0.1) + (0.9 * 0.9 * 0.1) + (0.9 * 0.9 * 0.9 * 0.1)
+```  
+   
+   Therefore, P(less than 3 taken, then success)  = P(0 taken, then success) + P(1 taken, then success) + P(2 taken, then success) + P(3 taken, then success) = 0.3439.  
+   
+## 2.4
+_4.  Explain  the  above  considering  that  the  most  common  control  statements  that  branch  areconditional statements and loops._  
+
+Above shows that until it reaches success again, repeat. So, for 2.3, we will do a for or while loop. While it is still a failure, multiply the current probability by the probability of failure, which is 0.9. Until it is not a failure thus a success, then the probability of that is 0.1.  
+
+# Problem 3 / Flip-flop Convergence  
+
+A 2-state Markov Chain hasα=β=.99.  
+
+## 3.1
+_Findλ1andP128usingR._  
+\begin{equation}
+P =
+\begin{bmatrix}
+    1-\alpha       & \alpha \\
+   \beta & 1-\beta \\
+\end{bmatrix}  
+= 
+\begin{bmatrix}
+    .01       & 0.99 \\
+   0.99 & 0.01 \\
+\end{bmatrix}   
+\end{equation}  
+
+```{r}
+p <- matrix(c(.01,.99,.99,.01),2,2,byrow=F)
+eigen(p)$values[1]
+```
+Therefore, $\lambda_1 = `r eigen(p)$values[1]`$  
+```{r}
+p^128
+```
+## 3.2
+_Simulate this Markov Chain for 200 steps._  
+```{r}
+simulation <- function( mat, steps) {
+        n <- nrow(mat)
+        new <- numeric(steps)
+        new[1] <- 1
+
+        for (i in 2:steps) {
+            temp = mat[new[i-1],]
+            new[i] <- sample(1:n, 1, prob = temp)
+        }
+        return(new)
+ }
+
+
+sim200 = simulation(p,200)
+sim200
+```
+## 3.3.  
+_Plot the running average of the “time spent” in state 1._  
+```{r}
+
+  plot((rbinom(200,200,sum(sim200 == 1)/200))/200, type = 'l', ylab= 'probability', ylim = c(0,1), xlab= 'time', main = 'probability that time is spent in state 1')
+
+```
+  
+  ## 3.4.  
+_The autocorrelation function shows how much the dependency on the starting state “wearsoff” over time.  Plot the autocorrelation over all of the steps (not just the first 30 steps)._
+```{r, echo=FALSE}
+acf(sim200)
+```
+
+
+
+# Problem 4  /  Innovation Diffusion
+_In  the  bookDiffusion  of  Innovationsby  Everett  M.  Rogers,  The  Innovation-Decision  process  isbroken up into the following discrete steps:_
+1.  Knowledge:  The individual knows about your innovation.2.  Persuasion:  The individual is persuaded to adopt your innovation.3.  Decision: The individual decides to adopt your innovation (usually by purchasing, but frictioncan be reduced by relying on advertising revenue).4.  Implementation:  The individual begins implementing your innovation.5.  Confirmation:  Typically this stage involves customization of the innovation, and use of it incommon practice.
+## 4.1
+_Create a transition matrix for this chain._
+```{r}
+transition <- matrix(c(.1,.9,0,0,0,
+              0.05, 0.3, 0.65, 0, 0, 
+              0, 0.08, 0.1, 0.82, 0, 
+              0, 0, 0.01, 0.2, 0.79,
+              0,0,0,.09,.91),5,5,byrow=T)
+transition
+```
+## 4.2 
+_Find the missing probabilities._  
+1->2: 1-0.1 = 0.9  
+2->3: 1-0.3-0.05 = 0.65  
+3->4: 1-0.1-0.08 = 0.82  
+4->5: 1-0.2-0.01 = 0.79  
+
+
+## 4.3  
+_Find the steady-state probabilities that an individual will end up in any particular state._
+\begin{equation}
+\begin{bmatrix}
+    v & w  &x & y & z \\
+\end{bmatrix}
+\begin{bmatrix}
+    0.1       & 0.9 & 0 & 0 & 0 \\
+   0.05 & 0.3 & 0.65 & 0 & 0 \\
+   0 & 0.08 & 0.1 & 0.82 & 0 \\
+   0 & 0 & 0.01 & 0.2 & 0.79 \\
+   0 & 0 & 0 & 0.09 & 0.91 \\
+\end{bmatrix}= \begin{bmatrix}
+    v & w  &x & y & z \\
+\end{bmatrix}   
+  \end{equation}
+  
+0.1v+0.05w+0x+0y+0z =  v  
+0.9v+0.3w+0.08x+0y+0z = w  
+0v+0.65w+0.1x+0.01y+0z = x  
+0v+0w+0.82x+0.2y+0.09z = y  
+v+w+x+y+z=1  
+   
+     
+
+
+```{r}
+A <- matrix(c(
+              .1-1,.9,0,0,1,
+              0.05, 0.3-1, 0.65, 0, 1, 
+              0, 0.08, 0.1-1, 0.82, 1, 
+              0, 0, 0.01, 0.2-1, 1,
+              0,0,0,0.09,1),5,5,byrow=T)
+A
+solveA <- solve(A) # get the inverse of p
+V = solveA[5,] #get the last row
+V
+```
+Therefore, $\lambda_1$ = `r V[1]`,  $\lambda_2$ = `r V[2]`,  $\lambda_3$ = `r V[3]`,  $\lambda_4$ = `r V[4]`, and $\lambda_5$ = `r V[5]`.  
+
+To check my work, I will do V*A = [0 0 0 0 1]
+```{r}
+#check
+V %*% A
+```
+
+It does!  
+## 4.4
+_Where would you put in more effort in diffusing this innovation?_  
+Since the steady state for state 1, state 2, and state 3 are essentially 0, in the long run, the probability of the innovation staying in these 3 states are very very slim. The probability that it will be in state 5 is around 90%, according to our steady state probabilities. Therefore, since ideally we want to go to state 5, the steady state with the highest porbability that is not in state 5 in state 4, with around 10% in the long run. We want to put more effort in the implementation stage to make sure this innovation runs successfully more times.  
+
+# Problem 5 / Gambler’s Ruin
+_Kim has $4 and Chris has $3.  At each step of the game, both players toss fair coins.  If both coinsshow heads, Chris pays Kim $1, if both coins show tails, Kim pays Chris $1.  Otherwise no moneychanges hands and they both keep playing.  The game only stops when one of the players runs outof money._
+## 5.1
+_Model this as a Markov Chain in which the state is the amount of money Kim has._
+Suppose S = {HH,HT,TH,TT}. However, given that one got H on the first try and if that person got T, they stay in the same state. Similarly, given that one got T on the first try and that person got H on the second, they stay in the same state. Therefore, we can consider S={HH,TT} which is the only time a transition will be absorbed.  
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('/Users/samanthatsoi/Desktop/Downloads/ECS132HW5Q5.1.jpg') #path
+```  
+   
+   
+## 5.2
+_What is the probability that Kim wins?_   
+Since this is a fair case,  
+
+n/T = n/(n+m) = 4/7  
+
+```{r, echo=FALSE}
+4/7
+```
+
+# Problem 6 / Flipping Out
+_You are flipping a fair coin repeatedly.  LetXnrepresent the outcome of the2 previous coin flipsat stepn(i.e.  if you have flipped heads twice in a row, then the state would be HH)._  
+
+## 6.1
+_Write out the transition matrix for this chain._  
+```{r}
+p <- matrix(c(1,0,0,0,
+              .5,0.5,0,0,
+              0,0,0.5,0.5,
+              0,0,0,1), dimnames = list(c("HH", "HT", "TH", "TT"),c("HH", "HT", "TH", "TT")),4,4, byrow= T)
+p
+```
+## 6.2
+_UseRto findP16._  
+```{r}
+p^16
+```
+
+
+
+

@@ -1,0 +1,136 @@
+---
+title: "ECS 132 - Homework 3"
+author: "Sam Tsoi, sgtsoi@ucdavis.edu, 913032178"
+date: "10/26/2018"
+output: html_document
+---
+
+# Problem 1 / Getting more acquainted with R
+## 1.1 
+Concatenatethe digits of your student ID into a vector namedsid.
+```{r}
+sid = c(9,1,3,0,3,2,1,7,8)
+sid
+```
+## 1.2   
+Multiply your student ID vector by the last digit of your student ID which is greater than 1,and subtract from it your original student ID.
+```{r}
+sid - (sid*8)
+```
+## 1.3 Subtract your original student ID from your student ID repeated by the last digit of yourstudent ID which is greater than 1.
+```{r}
+rep(sid, times = 8) - sid
+```
+## 1.4 Explain the result of the above.  How could this cause confusion?
+This can cause a confusion, because you would think that it would subtract from each element, but it doesn't happen because the vectors are different lengths.
+When you use repeat, it just concatenates to the end of the end of vector n number of times. And when you subtract a vector of a different length, R can be confused on what the user is trying to do.
+
+
+## 1.5.  Square your student ID vector.  What happens here?
+```{r}
+sid ^2
+```
+Each element in my sid vector was squared.
+## 1.6 
+Take the sum of the digits in your student ID vector without a loop.
+```{r}
+sum(sid)
+```
+## 1.7  
+Find the number of digits in your student ID vector that are equal to 9 without a loop.
+```{r}
+sum(sid == 9)
+```
+## 1.8.  
+Generate 10,000 random numbers following the binomial distribution with n= 17 and p= 0.8. How many times do you get 17 successes?
+```{r}
+n = 17
+p = 0.8
+sum(rbinom(10000,n, p) == 17)
+```
+## 1.9
+Verify the above with the pmf of the binomial distribution.  Does the probability align withthe above result?
+```{r}
+dbinom(17, 10000, 0.8)
+```
+
+# 2
+## 2.1
+_Supposen=  8  andp=  0.1,  what  is  the  probability  that  the  received  message  has  errorswhich go undetected?_  
+
+ \sum_{i = 1}^8 {{N}\choose{i}} \cdot .1^i * .9^{8-i}$   
+ 
+## 2.2
+_For general n and p, write down an expression (as a sum) for the probability that the receivedmessage has errors which go undetected._  
+
+P(undetected errors) = $P(A) = \sum_{x \ge 2} {{N}\choose{k}} \cdot p^kq^{N-k}$    
+
+# 3  
+_Cyber-Physical SystemsYou  have  developed  a  self-service  kiosk  capable  of  serving  about  15  clients  per  hour.   You  havebeen told that the average rate of customers using this kiosk is about 10 customers per hour.  Youalso  know  that  the  number  of  customers  who  approach  the  kiosk  per  hour  follows  the  Poissondistribution._  
+
+## 3.1  
+_Write out the pmf of the Poisson RV in this case and solve for 20 customers approaching thekiosk._  
+
+$P(X = 20) = \frac{ e^{-\lambda} * \lambda ^x}{x!} = \frac {e^{10} * 10^{20}}{20!}$
+
+## 3.2
+_Use anRfunction to find a probability for the above._
+```{r}
+dpois(20, 10, log = FALSE)
+```
+## 3.3  
+_HaveRgenerate random numbers following the above distribution for 100,000 intervals. Whatis the maximum number of customers approaching the kiosk in your simulation?_  
+
+The maximum number of customers approaching the kiosk is hoping that there would be 15 clients per hour. so we sum the poisson distribution with lambda 15 100,000 times:
+```{r}
+sum(rpois(100000, 15))
+```
+
+# 4  Continuous Distributions
+## 4.1 .
+_Xhas density functionf(x) =c(4−|x|) for−4< x <4, and 0 otherwise.  What value ofcmakes this a valid density function?_  
+
+
+$\displaystyle\int_-4^4 c(4-|x|)dx = 4xc - \frac{4x^2c}{2} |_{-4}^{4} = 16c - \frac{64c}{2} - (-16c - \frac{64c}{2}) = 32c$  
+$c=0$  
+
+## 4.2 
+_X has density functionx 2/9 for 0< x <3 and 0 otherwise.  FindE(X),E(X2), andV ar(X)forX._  
+
+$E(X) = \int_0^3 x * \frac{x^2}{9} = \frac{x^4}{36} |_0^3 = 81/36$  
+$E(X^2) = \int_0^3 x^2 * \frac{x^2}{9} = \frac{x^5}{40} |_0^3 = 243/40$  
+$Var(X) = E(X^2) - [E(X)]^2 = \frac{243}{40} - (\frac{81}{36})^2 = 1.0125$  
+
+# 5
+Uniform DistributionData communication networks use symbol streams to transport data.  For Quadrature AmplitudeModulation  (QAM),  each  symbol  typically  corresponds  to  a  point  in  a  constellation  of  possibleamplitudes that a carrier wave can take.  Theoretically, QAM-256 can transmit 256 unique sym-bols.  Ideally, use of the different symbols follows a uniform distribution, meaning that the entireconstellation is being used to its fullest extent.  Let’s number these unique symbols from 1 to 256.  
+
+## 5.1
+_A squirrel has chewed on the transmission line,  causing loss in the maximum amplitude itcan transmit.  Now symbols 140 through 256 are unavailable.  However, our modem is unableto detect this and still attempts to transmit on those symbols.  Use a definite integral on thepdf to find the probability of using invalid symbols._  
+
+$\displaystyle\int_{140}^{256} (b-a)/2 dx = \displaystyle\int_{140}^{256} (256-140)/2 = 58x |_{140}^{256} = (256*58) - (140*58) = 6728$  
+$\displaystyle\int_{1}^{256} (b-a)/2 dx = \displaystyle\int_{1}^{256} (256-1)/2 = 58x |_{1}^{256} = (256*58) * 58 = 14790$  
+
+The probability is:  
+
+```{r}
+6728/14790
+```
+
+## 5.2  
+UsingR,  generate  100,000  random  symbols  and  return  the  number  of  invalid  symbols  themodem attempted to transmit.  Use thetruncfunction to get discrete values.  
+
+$\displaystyle\int_{1}^{100000} (b-a)/2 dx = \displaystyle\int_{1}^{256} (256-1)/2 = 58x |_{1}^{256} = (256*58) * 58 = 14790$ 
+```{r}
+n = 100000
+symbols <- trunc(runif(n, min=1, max=256))
+sum(symbols >= 140 & symbols <= 256)
+```
+
+# Classmate Collaborators
+
+Include the names and email IDs of everyone you collaborated with.
+
+1. Kayla Peters, \{kaypeters\} [at] ucdavis [dot] edu, 913627392
+2. Vivian Quach, {vhquach} [at] ucdavis [dot] edu, 913174557
+
+
